@@ -1,1 +1,15 @@
 
+body {
+  background-color: lightblue;
+  color: white;
+  font-family: Ariel, Helvetica, san-serif;
+  margin: 10% 20%;
+}
+
+.sumqual-header {
+  text-align: center;
+  text-transform: uppercase;
+  border-top: 1px solid white;
+  border-bottom: 1px solid white;
+  background-color:rgba(0,0,0, 0.08)
+}
