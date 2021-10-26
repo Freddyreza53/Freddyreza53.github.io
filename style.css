@@ -4,6 +4,7 @@ body {
   margin: 0px;
   padding: 0px:
 }
+
 .resume-background {
   background-color: lightblue;
   width: 800px;
@@ -13,11 +14,21 @@ body {
   border-right: 2px solid black;
   margin: 20px auto;
 }
+
 .profile-pic {
   width: 25%;
-  height: 50%;
   border-radius: 50%;
-  
+  padding: 10px;
+}
+
+.cell-icon {
+  width: 3%
+}
+.email-icon {
+  width: 3%
+}
+.facebook-icon {
+  width: 3%
 }
 .top-header {
   text-align: center;
@@ -30,9 +41,7 @@ body {
   
 }
 
-h1 {
-  
-}
+
 
 h3 {
   margin: 0% 2%;
