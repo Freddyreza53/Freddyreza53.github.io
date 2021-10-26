@@ -16,19 +16,19 @@ body {
 }
 
 .profile-pic {
-  width: 25%;
-  border-radius: 50%;
+  width: 200px;
+  border-radius: 150px;
   padding: 10px;
 }
 
 .cell-icon {
-  width: 3%
+  width: 30px
 }
 .email-icon {
-  width: 3%
+  width: 30px
 }
 .facebook-icon {
-  width: 3%
+  width: 30px
 }
 .top-header {
   text-align: center;
