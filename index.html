@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kings of the North — FIFA World Cup 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:    #0b0f1a;
+    --navy2:   #111827;
+    --navy3:   #1a2235;
+    --gold:    #c9a84c;
+    --gold2:   #f0cc6e;
+    --gold3:   #7a5c1e;
+    --silver:  #8a9bb5;
+    --white:   #e8edf5;
+    --green:   #2ecc71;
+    --red:     #e74c3c;
+    --draw:    #e8a020;
+    --border:  rgba(201,168,76,0.18);
+    --card:    rgba(26,34,53,0.85);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% 0%, rgba(201,168,76,0.07) 0%, transparent 70%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 48px 24px 36px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+  }
+  .crown-icon { font-size: 2.8rem; margin-bottom: 6px; display: block; }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 50%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+  header p {
+    color: var(--silver);
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .last-updated {
+    position: absolute;
+    top: 16px; right: 20px;
+    font-size: 0.72rem;
+    color: var(--silver);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── NAV TABS ── */
+  nav {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 20px 16px 0;
+    flex-wrap: wrap;
+  }
+  nav button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--silver);
+    padding: 9px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  nav button:hover { border-color: var(--gold); color: var(--gold); }
+  nav button.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--navy);
+    font-weight: 600;
+  }
+
+  /* ── MAIN CONTENT ── */
+  main { max-width: 1200px; margin: 0 auto; padding: 28px 16px 60px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── LOADING / ERROR ── */
+  .loading-bar {
+    text-align: center;
+    padding: 60px;
+    color: var(--silver);
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+  }
+  .loading-bar .spinner {
+    display: inline-block;
+    width: 28px; height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-msg { color: var(--red); text-align: center; padding: 40px; font-size: 0.9rem; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+  }
+  .section-header span {
+    font-size: 0.75rem;
+    color: var(--silver);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── OWNER RANKINGS TABLE ── */
+  .rankings-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .rankings-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--silver);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .rankings-table th.num { text-align: right; }
+  .rankings-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.9rem;
+    vertical-align: middle;
+  }
+  .rankings-table td.num {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+  .rankings-table tr:hover td { background: rgba(201,168,76,0.04); }
+
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--navy3);
+    color: var(--silver);
+    border: 1px solid var(--border);
+  }
+  .rank-badge.r1 { background: linear-gradient(135deg,#c9a84c,#f0cc6e); color: var(--navy); border: none; }
+  .rank-badge.r2 { background: linear-gradient(135deg,#8a9bb5,#c0cce0); color: var(--navy); border: none; }
+  .rank-badge.r3 { background: linear-gradient(135deg,#cd7f32,#e8a060); color: var(--navy); border: none; }
+
+  .owner-name { font-weight: 600; }
+  .team-flags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 3px; }
+  .flag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--silver);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+  .flag-chip span.flag { font-size: 0.95rem; }
+
+  .pts-cell {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    color: var(--gold2);
+    font-weight: 700;
+  }
+  .pts-cell.top { color: var(--gold2); }
+
+  .proj-pick {
+    display: inline-block;
+    background: rgba(201,168,76,0.12);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--gold);
+  }
+
+  /* ── TEAM GRID (Owner Teams view) ── */
+  .owner-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .owner-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    backdrop-filter: blur(8px);
+  }
+  .owner-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .owner-card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .owner-card-pts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    color: var(--gold2);
+    font-weight: 600;
+  }
+  .team-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .team-row:last-child { border-bottom: none; }
+  .team-flag-big { font-size: 1.5rem; }
+  .team-info { flex: 1; }
+  .team-info .tname { font-weight: 500; font-size: 0.88rem; }
+  .team-info .trecord {
+    font-size: 0.72rem;
+    color: var(--silver);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+  }
+  .team-pts-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--gold);
+    font-weight: 600;
+    min-width: 36px;
+    text-align: right;
+  }
+  .stage-badge {
+    font-size: 0.62rem;
+    padding: 2px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .stage-eliminated { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+  .stage-group    { background: rgba(138,155,181,0.15); color: #8a9bb5; border: 1px solid rgba(138,155,181,0.2); }
+  .stage-r32      { background: rgba(46,204,113,0.12); color: #2ecc71; border: 1px solid rgba(46,204,113,0.25); }
+  .stage-r16      { background: rgba(46,204,113,0.18); color: #27ae60; border: 1px solid rgba(46,204,113,0.3); }
+  .stage-qf       { background: rgba(52,152,219,0.15); color: #3498db; border: 1px solid rgba(52,152,219,0.3); }
+  .stage-sf       { background: rgba(155,89,182,0.15); color: #9b59b6; border: 1px solid rgba(155,89,182,0.3); }
+  .stage-final    { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
+  .stage-champion { background: linear-gradient(135deg,rgba(201,168,76,0.3),rgba(240,204,110,0.3)); color: var(--gold2); border: 1px solid var(--gold); }
+
+  /* ── SCORING RULES ── */
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .rule-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .rule-pts {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    font-weight: 700;
+    min-width: 36px;
+    text-align: center;
+  }
+  .rule-info .rule-name { font-weight: 600; font-size: 0.9rem; }
+  .rule-info .rule-note { font-size: 0.75rem; color: var(--silver); margin-top: 2px; }
+
+  /* ── DRAFT ORDER ── */
+  .draft-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .draft-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--silver);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .draft-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.9rem;
+    vertical-align: middle;
+  }
+  .draft-table tr:hover td { background: rgba(201,168,76,0.04); }
+  .draft-pick-num {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .pick-1 { color: var(--gold2); font-size: 1.3rem; }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .stat-pill {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .stat-pill .sp-val {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .stat-pill .sp-lbl {
+    font-size: 0.72rem;
+    color: var(--silver);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .rankings-table th:nth-child(4),
+    .rankings-table td:nth-child(4),
+    .rankings-table th:nth-child(5),
+    .rankings-table td:nth-child(5) { display: none; }
+    .team-flags { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="last-updated" id="lastUpdated">Loading...</div>
+  <span class="crown-icon">⚽</span>
+  <h1>Kings of the North</h1>
+  <p>FIFA World Cup 2026 · Fantasy League Dashboard</p>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('rankings')">🏆 Standings</button>
+  <button onclick="showTab('teams')">🌍 Owner Teams</button>
+  <button onclick="showTab('draft')">📋 Draft Order</button>
+  <button onclick="showTab('rules')">📖 Scoring Rules</button>
+</nav>
+
+<main>
+  <!-- STANDINGS -->
+  <div id="tab-rankings" class="tab-panel active">
+    <div class="section-header">
+      <h2>Owner Standings</h2>
+      <span>Points update live from World Cup results</span>
+    </div>
+    <div id="status-bar" class="status-bar"></div>
+    <div id="rankings-content"><div class="loading-bar"><div class="spinner"></div><br>Fetching scores...</div></div>
+  </div>
+
+  <!-- OWNER TEAMS -->
+  <div id="tab-teams" class="tab-panel">
+    <div class="section-header">
+      <h2>Teams by Owner</h2>
+      <span>W-D-L · Goals For · Goals Against</span>
+    </div>
+    <div id="teams-content"><div class="loading-bar"><div class="spinner"></div><br>Fetching scores...</div></div>
+  </div>
+
+  <!-- DRAFT ORDER -->
+  <div id="tab-draft" class="tab-panel">
+    <div class="section-header">
+      <h2>Projected Draft Order</h2>
+      <span>Highest points earns pick #1 · Tiebreaker: Goal differential → Total wins</span>
+    </div>
+    <div id="draft-content"><div class="loading-bar"><div class="spinner"></div><br>Calculating...</div></div>
+  </div>
+
+  <!-- SCORING RULES -->
+  <div id="tab-rules" class="tab-panel">
+    <div class="section-header">
+      <h2>Scoring Rules</h2>
+      <span>FIFA World Cup 2026 Fantasy Scoring System</span>
+    </div>
+    <div class="rules-grid">
+      <div class="rule-card"><div class="rule-pts">3</div><div class="rule-info"><div class="rule-name">Win</div><div class="rule-note">Group stage or knockout, per match</div></div></div>
+      <div class="rule-card"><div class="rule-pts">1</div><div class="rule-info"><div class="rule-name">Draw</div><div class="rule-note">Group stage only</div></div></div>
+      <div class="rule-card"><div class="rule-pts">1</div><div class="rule-info"><div class="rule-name">Goal Scored</div><div class="rule-note">Per goal, uncapped</div></div></div>
+      <div class="rule-card"><div class="rule-pts">2</div><div class="rule-info"><div class="rule-name">Advance to Round of 32</div><div class="rule-note">Top 2 per group + 8 best 3rd-place</div></div></div>
+      <div class="rule-card"><div class="rule-pts">2</div><div class="rule-info"><div class="rule-name">Advance to Round of 16</div><div class="rule-note">Additional bonus (cumulative)</div></div></div>
+      <div class="rule-card"><div class="rule-pts">4</div><div class="rule-info"><div class="rule-name">Advance to Quarter-Finals</div><div class="rule-note">Additional bonus (cumulative)</div></div></div>
+      <div class="rule-card"><div class="rule-pts">6</div><div class="rule-info"><div class="rule-name">Advance to Semi-Finals</div><div class="rule-note">Additional bonus (cumulative)</div></div></div>
+      <div class="rule-card"><div class="rule-pts">8</div><div class="rule-info"><div class="rule-name">Advance to Final</div><div class="rule-note">Additional bonus (cumulative)</div></div></div>
+      <div class="rule-card"><div class="rule-pts">12</div><div class="rule-info"><div class="rule-name">Win the Final (Champion)</div><div class="rule-note">Additional bonus (cumulative)</div></div></div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px 20px;font-size:0.85rem;color:var(--silver);line-height:1.7;">
+      <strong style="color:var(--white)">Draft Order Logic:</strong> Highest total points earns pick #1 (best team selects first), descending through all 14 owners.<br>
+      <strong style="color:var(--white)">Tiebreaker 1:</strong> Goal Differential (Goals For − Goals Against, summed across all your teams).<br>
+      <strong style="color:var(--white)">Tiebreaker 2:</strong> Total Wins.<br>
+      <strong style="color:var(--white)">Note:</strong> 42 of 48 teams in play. Dropped (lowest FIFA rank): Curaçao, Haiti, New Zealand, Jordan, Cape Verde, Saudi Arabia.
+    </div>
+  </div>
+</main>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────
+const SHEET_ID  = '1WaBunPxwpfBIboswlIhY0CSZ06dErLS6KRcRTw1cLok';
+const API_KEY   = 'AIzaSyDXBnfBZUOe065PWoTVMCFheLtYbTDqZG8';
+const SHEET_TAB = 'Team Stats'; // The tab with live stats
+
+// ── HARDCODED OWNER → TEAMS ──────────────────────────────────────────────
+const OWNERS = [
+  { name: 'Oscar',    teams: ['England',     'Austria',   'Ivory Coast'] },
+  { name: 'Freddy',   teams: ['Portugal',    'Japan',     'Tunisia'] },
+  { name: 'Simon',    teams: ['Spain',       'Canada',    'Norway'] },
+  { name: 'Fernando', teams: ['Morocco',     'Ecuador',   'Qatar'] },
+  { name: 'Fregoso',  teams: ['Switzerland', 'Paraguay',  'DR Congo'] },
+  { name: 'T',        teams: ['Croatia',     'Iran',      'South Africa'] },
+  { name: 'Tata',     teams: ['Colombia',    'Turkiye',   'Uzbekistan'] },
+  { name: 'Juan',     teams: ['Brazil',      'Senegal',   'Iraq'] },
+  { name: 'Sakai',    teams: ['Germany',     'Australia', 'Panama'] },
+  { name: 'Andre',    teams: ['Netherlands', 'Czechia',   'Bosnia and Herzegovina'] },
+  { name: 'Nate',     teams: ['Argentina',   'South Korea','Algeria'] },
+  { name: 'Muaz',     teams: ['France',      'Uruguay',   'Ghana'] },
+  { name: 'Max',      teams: ['USA',         'Scotland',  'Sweden'] },
+  { name: 'Uthman',   teams: ['Belgium',     'Mexico',    'Egypt'] },
+];
+
+// ── COUNTRY FLAGS ────────────────────────────────────────────────────────
+const FLAGS = {
+  'England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Austria':'🇦🇹','Ivory Coast':'🇨🇮',
+  'Portugal':'🇵🇹','Japan':'🇯🇵','Tunisia':'🇹🇳',
+  'Spain':'🇪🇸','Canada':'🇨🇦','Norway':'🇳🇴',
+  'Morocco':'🇲🇦','Ecuador':'🇪🇨','Qatar':'🇶🇦',
+  'Switzerland':'🇨🇭','Paraguay':'🇵🇾','DR Congo':'🇨🇩',
+  'Croatia':'🇭🇷','Iran':'🇮🇷','South Africa':'🇿🇦',
+  'Colombia':'🇨🇴','Turkiye':'🇹🇷','Uzbekistan':'🇺🇿',
+  'Brazil':'🇧🇷','Senegal':'🇸🇳','Iraq':'🇮🇶',
+  'Germany':'🇩🇪','Australia':'🇦🇺','Panama':'🇵🇦',
+  'Netherlands':'🇳🇱','Czechia':'🇨🇿','Bosnia and Herzegovina':'🇧🇦',
+  'Argentina':'🇦🇷','South Korea':'🇰🇷','Algeria':'🇩🇿',
+  'France':'🇫🇷','Uruguay':'🇺🇾','Ghana':'🇬🇭',
+  'USA':'🇺🇸','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Sweden':'🇸🇪',
+  'Belgium':'🇧🇪','Mexico':'🇲🇽','Egypt':'🇪🇬',
+};
+
+const flag = (team) => FLAGS[team] || '🏳️';
+
+// ── STAGE DISPLAY ────────────────────────────────────────────────────────
+function stageClass(stage) {
+  if (!stage) return 'stage-group';
+  const s = stage.toLowerCase();
+  if (s.includes('champion')) return 'stage-champion';
+  if (s.includes('final') && !s.includes('semi') && !s.includes('quarter')) return 'stage-final';
+  if (s.includes('semi')) return 'stage-sf';
+  if (s.includes('quarter')) return 'stage-qf';
+  if (s.includes('16')) return 'stage-r16';
+  if (s.includes('32')) return 'stage-r32';
+  if (s.includes('eliminat') || s.includes('out')) return 'stage-eliminated';
+  return 'stage-group';
+}
+
+function stageLabel(stage) {
+  if (!stage || stage.trim() === '') return 'Group Stage';
+  return stage;
+}
+
+// ── SCORING LOGIC ────────────────────────────────────────────────────────
+// Calculates points for a team given its stats row from the sheet
+function calcPoints(row) {
+  // Expected columns from "Team Stats" sheet:
+  // Team | W | D | L | GF | GA | Stage
+  const wins  = parseInt(row.W  || row.wins  || 0) || 0;
+  const draws = parseInt(row.D  || row.draws || 0) || 0;
+  const gf    = parseInt(row.GF || row.gf    || 0) || 0;
+  const stage = (row.Stage || row.stage || '').toLowerCase();
+
+  let pts = 0;
+  pts += wins  * 3;
+  pts += draws * 1;
+  pts += gf    * 1;
+
+  // Advancement bonuses (cumulative — each round adds on top)
+  if (stage.includes('32') || stage.includes('16') || stage.includes('quarter') || stage.includes('semi') || (stage.includes('final') && !stage.includes('semi') && !stage.includes('quarter')) || stage.includes('champion')) pts += 2; // R32
+  if (stage.includes('16') || stage.includes('quarter') || stage.includes('semi') || (stage.includes('final') && !stage.includes('semi') && !stage.includes('quarter')) || stage.includes('champion')) pts += 2; // R16
+  if (stage.includes('quarter') || stage.includes('semi') || (stage.includes('final') && !stage.includes('semi') && !stage.includes('quarter')) || stage.includes('champion')) pts += 4; // QF
+  if (stage.includes('semi') || (stage.includes('final') && !stage.includes('semi') && !stage.includes('quarter')) || stage.includes('champion')) pts += 6; // SF
+  if ((stage.includes('final') && !stage.includes('semi') && !stage.includes('quarter')) || stage.includes('champion')) pts += 8; // Final
+  if (stage.includes('champion')) pts += 12; // Champion
+
+  return pts;
+}
+
+// ── FETCH SHEET DATA ─────────────────────────────────────────────────────
+async function fetchSheetData() {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_TAB)}?key=${API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Sheets API error ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const rows = data.values || [];
+  if (rows.length < 2) return {};
+
+  const headers = rows[0].map(h => h.trim());
+  const teamData = {};
+  for (let i = 1; i < rows.length; i++) {
+    const r = {};
+    headers.forEach((h, idx) => { r[h] = (rows[i][idx] || '').trim(); });
+    const teamName = r['Team'] || r['team'] || r[headers[0]];
+    if (teamName) teamData[teamName] = r;
+  }
+  return teamData;
+}
+
+// ── BUILD OWNER SUMMARY ──────────────────────────────────────────────────
+function buildOwnerSummaries(teamData) {
+  return OWNERS.map(owner => {
+    let totalPts = 0, totalW = 0, totalD = 0, totalL = 0, totalGF = 0, totalGA = 0;
+    const teamDetails = owner.teams.map(team => {
+      const row = teamData[team] || {};
+      const pts = calcPoints(row);
+      const w   = parseInt(row.W  || 0) || 0;
+      const d   = parseInt(row.D  || 0) || 0;
+      const l   = parseInt(row.L  || 0) || 0;
+      const gf  = parseInt(row.GF || 0) || 0;
+      const ga  = parseInt(row.GA || 0) || 0;
+      totalPts += pts;
+      totalW   += w; totalD += d; totalL += l;
+      totalGF  += gf; totalGA += ga;
+      return { team, pts, w, d, l, gf, ga, stage: row.Stage || row.stage || '', row };
+    });
+    return {
+      name: owner.name,
+      pts: totalPts,
+      w: totalW, d: totalD, l: totalL,
+      gf: totalGF, ga: totalGA,
+      gd: totalGF - totalGA,
+      teams: teamDetails,
+    };
+  }).sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.w - a.w);
+}
+
+// ── RENDER STANDINGS ─────────────────────────────────────────────────────
+function renderRankings(summaries, teamData) {
+  // Status bar
+  const totalTeams = Object.keys(teamData).length;
+  const totalGoals = Object.values(teamData).reduce((s, r) => s + (parseInt(r.GF||0)||0), 0);
+  document.getElementById('status-bar').innerHTML = `
+    <div class="stat-pill"><div class="sp-val">${totalTeams}</div><div class="sp-lbl">Teams tracked</div></div>
+    <div class="stat-pill"><div class="sp-val">${totalGoals}</div><div class="sp-lbl">Goals scored</div></div>
+    <div class="stat-pill"><div class="sp-val">${summaries.length}</div><div class="sp-lbl">Owners</div></div>
+    <div class="stat-pill"><div class="sp-val">${summaries[0]?.pts ?? 0}</div><div class="sp-lbl">Lead score</div></div>
+  `;
+
+  const rows = summaries.map((s, i) => {
+    const rankClass = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
+    const teamFlags = s.teams.map(t => `<span class="flag-chip"><span class="flag">${flag(t.team)}</span>${t.team}</span>`).join('');
+    return `
+      <tr>
+        <td><span class="rank-badge ${rankClass}">${i+1}</span></td>
+        <td>
+          <div class="owner-name">${s.name}</div>
+          <div class="team-flags">${teamFlags}</div>
+        </td>
+        <td class="num pts-cell ${i===0?'top':''}">${s.pts}</td>
+        <td class="num">${s.w}–${s.d}–${s.l}</td>
+        <td class="num" style="color:${s.gd>=0?'var(--green)':'var(--red)'};">${s.gd>0?'+':''}${s.gd}</td>
+        <td><span class="proj-pick">#${i+1}</span></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('rankings-content').innerHTML = `
+    <table class="rankings-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Owner</th>
+          <th class="num">Pts</th>
+          <th class="num">W–D–L</th>
+          <th class="num">GD</th>
+          <th>Proj. Pick</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── RENDER OWNER TEAMS ───────────────────────────────────────────────────
+function renderTeams(summaries) {
+  // Sort by rank for display
+  const cards = summaries.map((s, idx) => {
+    const teamRows = s.teams.map(t => `
+      <div class="team-row">
+        <div class="team-flag-big">${flag(t.team)}</div>
+        <div class="team-info">
+          <div class="tname">${t.team}</div>
+          <div class="trecord">${t.w}W ${t.d}D ${t.l}L · ${t.gf} GF · ${t.ga} GA</div>
+        </div>
+        <span class="stage-badge ${stageClass(t.stage)}">${stageLabel(t.stage)}</span>
+        <div class="team-pts-badge">${t.pts}pt</div>
+      </div>`).join('');
+
+    return `
+      <div class="owner-card">
+        <div class="owner-card-header">
+          <div>
+            <div style="font-size:0.65rem;color:var(--silver);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Rank #${idx+1}</div>
+            <div class="owner-card-name">${s.name}</div>
+          </div>
+          <div class="owner-card-pts">${s.pts} pts</div>
+        </div>
+        ${teamRows}
+      </div>`;
+  }).join('');
+
+  document.getElementById('teams-content').innerHTML = `<div class="owner-cards-grid">${cards}</div>`;
+}
+
+// ── RENDER DRAFT ORDER ───────────────────────────────────────────────────
+function renderDraft(summaries) {
+  const rows = summaries.map((s, i) => {
+    const teamList = s.teams.map(t => `${flag(t.team)} ${t.team}`).join(' &nbsp;·&nbsp; ');
+    return `
+      <tr>
+        <td><span class="draft-pick-num ${i===0?'pick-1':''}">#${i+1}</span></td>
+        <td style="font-weight:600;">${s.name}</td>
+        <td style="font-size:0.8rem;color:var(--silver);">${teamList}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--gold);text-align:right;">${s.pts}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:${s.gd>=0?'var(--green)':'var(--red)'};text-align:right;">${s.gd>0?'+':''}${s.gd}</td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('draft-content').innerHTML = `
+    <table class="draft-table">
+      <thead>
+        <tr>
+          <th>Pick</th>
+          <th>Owner</th>
+          <th>Teams</th>
+          <th style="text-align:right;">Pts</th>
+          <th style="text-align:right;">GD (TB)</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="margin-top:16px;font-size:0.75rem;color:var(--silver);">
+      Draft order updates automatically as World Cup results come in. Tiebreaker: Goal Differential → Total Wins.
+    </p>`;
+}
+
+// ── TAB SWITCHING ────────────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const teamData = await fetchSheetData();
+    const summaries = buildOwnerSummaries(teamData);
+    renderRankings(summaries, teamData);
+    renderTeams(summaries);
+    renderDraft(summaries);
+    document.getElementById('lastUpdated').textContent =
+      'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  } catch (err) {
+    const errHtml = `<div class="error-msg">
+      ⚠️ Could not load sheet data.<br>
+      <small style="color:var(--silver);margin-top:8px;display:block;">${err.message}</small>
+      <small style="color:var(--silver);margin-top:6px;display:block;">
+        Make sure the "Team Stats" tab exists in your sheet, the sheet is shared publicly (viewer access), and the API key is valid.
+      </small>
+    </div>`;
+    ['rankings-content','teams-content','draft-content'].forEach(id => {
+      document.getElementById(id).innerHTML = errHtml;
+    });
+    document.getElementById('lastUpdated').textContent = 'Error loading data';
+  }
+
+  // Auto-refresh every 5 minutes
+  setTimeout(init, 5 * 60 * 1000);
+}
+
+init();
+</script>
+</body>
+</html>
