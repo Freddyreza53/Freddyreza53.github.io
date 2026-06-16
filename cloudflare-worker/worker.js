@@ -25,7 +25,7 @@ const CACHE_TTL  = 60 * 30; // 30 minutes in seconds
 // Lock down to your GitHub Pages URL once deployed, e.g.:
 // 'https://yourusername.github.io'
 // Use '*' during development.
-const ALLOWED_ORIGIN = '*';
+const ALLOWED_ORIGIN = 'https://freddyreza53.github.io';
 
 const ROUTES = {
   '/games':  '/get/games',

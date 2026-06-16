@@ -333,27 +333,33 @@ async function workerFetch(route) {
 }
 
 // ── MAIN DATA FETCH ────────────────────────────────────────────────────────
-// worldcup26.ir response shapes:
-//
-// GET /games  → array of match objects:
-//   { id, home_team_id, away_team_id, home_score, away_score,
-//     matchday, type ("group"|"knockout"), finished,
-//     home_team: { name_en, ... }, away_team: { name_en, ... } }
-//
-// GET /groups → array of group objects:
-//   { group, teams: [{ team_id, pts, gf, ga, gd, wins, draws, losses,
-//                      played, team: { name_en } }] }
-//
-// Strategy: build W/D/L/GF/GA from /games (finished matches),
-// then layer in group standings from /groups for accuracy,
-// then determine furthest stage from match types and matchday.
+// worldcup26.ir response shapes can vary — sometimes a bare array,
+// sometimes wrapped in { data: [...] } or { games: [...] } etc.
+// We normalize to an array defensively before processing.
+function toArray(val) {
+  if (Array.isArray(val)) return val;
+  if (val && Array.isArray(val.data))    return val.data;
+  if (val && Array.isArray(val.games))   return val.games;
+  if (val && Array.isArray(val.groups))  return val.groups;
+  if (val && Array.isArray(val.results)) return val.results;
+  // Last resort: if it's an object with numeric keys, convert to array
+  if (val && typeof val === 'object') {
+    const vals = Object.values(val);
+    if (vals.length && Array.isArray(vals[0])) return vals[0];
+  }
+  return [];
+}
+
 async function loadData() {
-  const [games, groups] = await Promise.all([
+  const [gamesRaw, groupsRaw] = await Promise.all([
     workerFetch('/games'),
     workerFetch('/groups'),
   ]);
 
-  const teamStats = {}; // normalized name → { w, d, l, gf, ga, stage }
+  const games  = toArray(gamesRaw);
+  const groups = toArray(groupsRaw);
+
+  const teamStats = {};
 
   const ensureTeam = (name) => {
     if (!teamStats[name]) teamStats[name] = { w:0, d:0, l:0, gf:0, ga:0, stage:'group_md1' };
@@ -366,76 +372,68 @@ async function loadData() {
     }
   };
 
-  // ── Pass 1: seed all teams from groups endpoint (most reliable W/D/L/GF/GA)
-  for (const grp of (groups || [])) {
-    for (const entry of (grp.teams || [])) {
-      const name = normName(entry.team?.name_en || '');
+  // ── Pass 1: seed all teams from groups endpoint (W/D/L/GF/GA)
+  for (const grp of groups) {
+    const grpTeams = toArray(grp.teams || grp.standings || []);
+    for (const entry of grpTeams) {
+      const rawName = entry.team?.name_en || entry.name_en || entry.name || '';
+      const name = normName(rawName);
       if (!name) continue;
       ensureTeam(name);
-      // Group standings endpoint gives cumulative group-stage stats
-      teamStats[name].w  = parseInt(entry.wins   || 0) || 0;
-      teamStats[name].d  = parseInt(entry.draws  || 0) || 0;
-      teamStats[name].l  = parseInt(entry.losses || 0) || 0;
-      teamStats[name].gf = parseInt(entry.gf     || 0) || 0;
-      teamStats[name].ga = parseInt(entry.ga     || 0) || 0;
-      // Determine group stage progress from matches played
-      const played = parseInt(entry.played || 0) || 0;
+      teamStats[name].w  = parseInt(entry.wins   || entry.w || 0) || 0;
+      teamStats[name].d  = parseInt(entry.draws  || entry.d || 0) || 0;
+      teamStats[name].l  = parseInt(entry.losses || entry.l || 0) || 0;
+      teamStats[name].gf = parseInt(entry.gf || 0) || 0;
+      teamStats[name].ga = parseInt(entry.ga || 0) || 0;
+      const played = parseInt(entry.played || entry.mp || 0) || 0;
       const mdStage = played >= 3 ? 'group_md3' : played >= 2 ? 'group_md2' : 'group_md1';
       upgradeStage(name, mdStage);
     }
   }
 
-  // ── Pass 2: scan all games to detect knockout advancement and accumulate KO stats
-  for (const game of (games || [])) {
-    const homeName = normName(game.home_team?.name_en || '');
-    const awayName = normName(game.away_team?.name_en || '');
+  // ── Pass 2: scan games for knockout stage advancement
+  for (const game of games) {
+    const homeName = normName(game.home_team?.name_en || game.home_team_name || '');
+    const awayName = normName(game.away_team?.name_en || game.away_team_name || '');
     if (!homeName || !awayName) continue;
 
     ensureTeam(homeName);
     ensureTeam(awayName);
 
-    const type     = (game.type || '').toLowerCase();       // "group" or "knockout"
-    const finished = game.finished === true || game.finished === 'true';
+    const type     = (game.type || '').toLowerCase();
+    const finished = game.finished === true || game.finished === 'true' || game.finished === 1;
     const matchday = parseInt(game.matchday || 1);
-    const hg       = parseInt(game.home_score ?? 0) || 0;
-    const ag       = parseInt(game.away_score ?? 0) || 0;
-    const round    = (game.round || game.stage || '').toLowerCase();
+    const hg       = parseInt(game.home_score ?? game.home_goals ?? 0) || 0;
+    const ag       = parseInt(game.away_score ?? game.away_goals ?? 0) || 0;
+    const round    = (game.round || game.stage || game.round_name || '').toLowerCase();
 
-    if (type === 'group') {
-      // Track furthest matchday reached (even for upcoming matches)
+    if (type === 'group' || type === '') {
       const mdStage = matchday >= 3 ? 'group_md3' : matchday >= 2 ? 'group_md2' : 'group_md1';
       upgradeStage(homeName, mdStage);
       upgradeStage(awayName, mdStage);
-      // Stats already populated from /groups — skip accumulating here
     } else if (type === 'knockout' || type === 'playoff') {
-      // Determine which knockout round this is
-      const kStage = detectKnockoutStage(round || game.round_name || '');
+      const kStage = detectKnockoutStage(round);
       if (kStage) {
-        // Both teams reached this round
         upgradeStage(homeName, kStage);
         upgradeStage(awayName, kStage);
       }
 
-      if (finished) {
-        // Accumulate knockout goals on top of group stage totals
+      if (finished && kStage) {
         teamStats[homeName].gf += hg; teamStats[homeName].ga += ag;
         teamStats[awayName].gf += ag; teamStats[awayName].ga += hg;
 
         const homeWon = hg > ag;
         const awayWon = ag > hg;
-
         if (homeWon)      { teamStats[homeName].w++; teamStats[awayName].l++; }
         else if (awayWon) { teamStats[awayName].w++; teamStats[homeName].l++; }
 
-        // Loser is eliminated (skip 3rd place match)
-        const is3rd = round.includes('3rd') || round.includes('third') || round.includes('place');
-        if (!is3rd && kStage) {
+        const is3rd   = round.includes('3rd') || round.includes('third') || round.includes('place');
+        const isFinal = round.includes('final') && !round.includes('semi') && !round.includes('quarter') && !is3rd;
+
+        if (!is3rd) {
           if (homeWon) teamStats[awayName].stage = 'out';
           else if (awayWon) teamStats[homeName].stage = 'out';
         }
-
-        // Final winner = champion
-        const isFinal = round.includes('final') && !round.includes('semi') && !round.includes('quarter') && !is3rd;
         if (isFinal) {
           if (homeWon) teamStats[homeName].stage = 'champion';
           if (awayWon) teamStats[awayName].stage = 'champion';
@@ -565,10 +563,7 @@ function showError(msg) {
 // ── INIT ───────────────────────────────────────────────────────────────────
 async function init() {
   try {
-    if (WORKER_URL === 'REPLACE_WITH_YOUR_WORKER_URL') {
-      showError('Worker URL not set. Deploy the Cloudflare Worker and replace <code>REPLACE_WITH_YOUR_WORKER_URL</code> in index.html with your Worker URL.');
-      return;
-    }
+    // loadData fetches from the Cloudflare Worker proxy
     const teamStats  = await loadData();
     const summaries  = buildSummaries(teamStats);
     renderAll(summaries, teamStats);
