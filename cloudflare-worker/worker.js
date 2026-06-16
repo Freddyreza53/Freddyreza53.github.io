@@ -11,8 +11,6 @@
  *
  * Supported routes:
  *   GET /games    → worldcup26.ir/get/games    (all 104 matches + scores)
- *   GET /groups   → worldcup26.ir/get/groups   (group standings)
- *   GET /teams    → worldcup26.ir/get/teams    (all 48 teams)
  *   GET /health   → returns {"ok":true}
  *
  * Deploy:  wrangler deploy
@@ -29,8 +27,6 @@ const ALLOWED_ORIGIN = 'https://freddyreza53.github.io';
 
 const ROUTES = {
   '/games':  '/get/games',
-  '/groups': '/get/groups',
-  '/teams':  '/get/teams',
 };
 
 export default {

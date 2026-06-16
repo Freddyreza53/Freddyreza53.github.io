@@ -353,24 +353,16 @@ function toArray(val) {
 }
 
 async function loadData() {
-  const [gamesRaw, groupsRaw] = await Promise.all([
-    workerFetch('/games'),
-    workerFetch('/groups'),
-  ]);
-
-  const games  = toArray(gamesRaw);
-  const groups = toArray(groupsRaw);
+  const gamesRaw = await workerFetch('/games');
+  const games    = toArray(gamesRaw);
 
   // ── Step 1: build team_id → normalized name map from games
-  // Games have flat fields: home_team_name_en / away_team_name_en
   const idToName = {};
   for (const game of games) {
-    const hId   = String(game.home_team_id || '');
-    const aId   = String(game.away_team_id || '');
-    const hName = game.home_team_name_en || '';
-    const aName = game.away_team_name_en || '';
-    if (hId && hId !== '0' && hName) idToName[hId] = normName(hName);
-    if (aId && aId !== '0' && aName) idToName[aId] = normName(aName);
+    const hId = String(game.home_team_id || '');
+    const aId = String(game.away_team_id || '');
+    if (hId && hId !== '0' && game.home_team_name_en) idToName[hId] = normName(game.home_team_name_en);
+    if (aId && aId !== '0' && game.away_team_name_en) idToName[aId] = normName(game.away_team_name_en);
   }
 
   const teamStats = {};
@@ -386,74 +378,54 @@ async function loadData() {
     }
   };
 
-  // ── Step 2: populate group-stage stats from /groups using id→name map
-  // Groups have: { name, teams: [{ team_id, mp, w, d, l, gf, ga, pts }] }
-  for (const grp of groups) {
-    const grpTeams = toArray(grp.teams || []);
-    for (const entry of grpTeams) {
-      const name = idToName[String(entry.team_id)];
-      if (!name) continue;
-      ensureTeam(name);
-      teamStats[name].w  = parseInt(entry.w  || 0) || 0;
-      teamStats[name].d  = parseInt(entry.d  || 0) || 0;
-      teamStats[name].l  = parseInt(entry.l  || 0) || 0;
-      teamStats[name].gf = parseInt(entry.gf || 0) || 0;
-      teamStats[name].ga = parseInt(entry.ga || 0) || 0;
-      const played = parseInt(entry.mp || 0) || 0;
-      const mdStage = played >= 3 ? 'group_md3' : played >= 2 ? 'group_md2' : 'group_md1';
-      upgradeStage(name, mdStage);
-    }
-  }
-
-  // ── Step 3: scan all games to track matchday progress and knockout advancement
+  // ── Step 2: build all stats from games — both group and knockout
   for (const game of games) {
     const type     = (game.type || '').toLowerCase();
     const matchday = parseInt(game.matchday || 1);
     const finished = (game.finished || '').toString().toUpperCase() === 'TRUE';
     const hg       = parseInt(game.home_score || 0) || 0;
     const ag       = parseInt(game.away_score || 0) || 0;
+    const hId      = String(game.home_team_id || '');
+    const aId      = String(game.away_team_id || '');
+    const hName    = hId !== '0' ? idToName[hId] : null;
+    const aName    = aId !== '0' ? idToName[aId] : null;
 
     if (type === 'group') {
-      // Upgrade matchday stage for both teams (even for unplayed future matches)
-      const hName = idToName[String(game.home_team_id)];
-      const aName = idToName[String(game.away_team_id)];
-      const mdStage = matchday >= 3 ? 'group_md3' : matchday >= 2 ? 'group_md2' : 'group_md1';
-      if (hName) upgradeStage(hName, mdStage);
-      if (aName) upgradeStage(aName, mdStage);
+      // Seed teams and track furthest matchday seen (even unplayed)
+      if (hName) { ensureTeam(hName); upgradeStage(hName, matchday >= 3 ? 'group_md3' : matchday >= 2 ? 'group_md2' : 'group_md1'); }
+      if (aName) { ensureTeam(aName); upgradeStage(aName, matchday >= 3 ? 'group_md3' : matchday >= 2 ? 'group_md2' : 'group_md1'); }
+
+      if (finished && hName && aName) {
+        teamStats[hName].gf += hg; teamStats[hName].ga += ag;
+        teamStats[aName].gf += ag; teamStats[aName].ga += hg;
+        if (hg > ag)      { teamStats[hName].w++; teamStats[aName].l++; }
+        else if (ag > hg) { teamStats[aName].w++; teamStats[hName].l++; }
+        else              { teamStats[hName].d++; teamStats[aName].d++; }
+      }
 
     } else {
-      // Knockout types: r32, r16, qf, sf, final, third
-      // Map API type field directly to our stage keys
+      // Knockout: r32, r16, qf, sf, final, third
       const typeMap = { r32:'r32', r16:'r16', qf:'qf', sf:'sf', final:'final', third:'sf' };
       const kStage  = typeMap[type] || detectKnockoutStage(type);
       if (!kStage) continue;
-
-      const hId   = String(game.home_team_id || '');
-      const aId   = String(game.away_team_id || '');
-      const hName = hId !== '0' ? idToName[hId] : null;
-      const aName = aId !== '0' ? idToName[aId] : null;
 
       if (hName) upgradeStage(hName, kStage);
       if (aName) upgradeStage(aName, kStage);
 
       if (finished && hName && aName) {
-        // Accumulate knockout goals on top of group totals
         teamStats[hName].gf += hg; teamStats[hName].ga += ag;
         teamStats[aName].gf += ag; teamStats[aName].ga += hg;
-
-        const homeWon = hg > ag;
-        const awayWon = ag > hg;
+        const homeWon = hg > ag, awayWon = ag > hg;
         if (homeWon)      { teamStats[hName].w++; teamStats[aName].l++; }
         else if (awayWon) { teamStats[aName].w++; teamStats[hName].l++; }
 
-        const is3rd = type === 'third';
-        if (!is3rd) {
-          if (homeWon) teamStats[aName].stage = 'out';
+        if (type !== 'third') {
+          if (homeWon)      teamStats[aName].stage = 'out';
           else if (awayWon) teamStats[hName].stage = 'out';
         }
         if (type === 'final') {
-          if (homeWon) teamStats[hName].stage = 'champion';
-          if (awayWon) teamStats[aName].stage = 'champion';
+          if (homeWon)      teamStats[hName].stage = 'champion';
+          else if (awayWon) teamStats[aName].stage = 'champion';
         }
       }
     }
@@ -487,7 +459,7 @@ function renderAll(summaries, teamStats) {
     <div class="stat-pill"><div class="val">${totalGoals}</div><div class="lbl">Total goals</div></div>
     <div class="stat-pill"><div class="val">${summaries[0]?.pts ?? 0}</div><div class="lbl">Lead score</div></div>
   `;
-  document.getElementById('live-indicator').innerHTML = `<span class="live-dot"></span>Live from worldcup26.ir`;
+  document.getElementById('live-indicator').innerHTML = `<span class="live-dot"></span>Live from api-football.com`;
 
   // Standings table
   const rankRows = summaries.map((s,i) => {
