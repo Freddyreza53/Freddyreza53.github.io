@@ -156,10 +156,29 @@
   @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.3;} }
 
   /* ── MATCH HISTORY ── */
-  .match-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .match-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; align-items:center; }
   .mf-btn { background:transparent; border:1px solid var(--border); color:var(--silver); padding:5px 14px; border-radius:20px; cursor:pointer; font-size:0.75rem; font-family:'Inter',sans-serif; transition:all 0.2s; }
   .mf-btn:hover { border-color:var(--gold); color:var(--gold); }
   .mf-btn.active { background:rgba(201,168,76,0.15); border-color:var(--gold); color:var(--gold2); font-weight:600; }
+  .mf-select {
+    background:var(--navy3); border:1px solid var(--border); color:var(--silver);
+    padding:5px 12px; border-radius:20px; cursor:pointer; font-size:0.75rem;
+    font-family:'Inter',sans-serif; transition:all 0.2s; outline:none;
+  }
+  .mf-select:hover, .mf-select:focus { border-color:var(--gold); color:var(--gold2); }
+  .mf-select.has-value { background:rgba(201,168,76,0.15); border-color:var(--gold); color:var(--gold2); font-weight:600; }
+
+  .date-section { margin-bottom:26px; }
+  .date-section:last-child { margin-bottom:0; }
+  .date-hdr {
+    display:flex; align-items:center; gap:10px; margin-bottom:10px;
+    padding-bottom:6px; border-bottom:1px solid var(--border);
+  }
+  .date-hdr h3 {
+    font-family:'Cinzel',serif; font-size:0.95rem; color:var(--gold2);
+    letter-spacing:0.05em; font-weight:700; white-space:nowrap;
+  }
+  .date-hdr .date-count { font-size:0.68rem; color:var(--silver); text-transform:uppercase; letter-spacing:0.06em; }
 
   .match-list { display:flex; flex-direction:column; gap:10px; }
   .match-card {
@@ -192,28 +211,35 @@
   .match-scorers .away-scorers { text-align:right; }
 
   /* ── GROUP STANDINGS ── */
-  .groups-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+  .groups-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:16px; }
   .group-card { background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-  .group-card-hdr { background:rgba(201,168,76,0.08); border-bottom:1px solid var(--border); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
-  .group-card-title { font-family:'Cinzel',serif; font-size:0.9rem; color:var(--gold); font-weight:700; letter-spacing:0.06em; }
-  .group-tbl { width:100%; border-collapse:collapse; }
-  .group-tbl th { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--silver); padding:6px 10px; font-weight:500; text-align:right; }
-  .group-tbl th:first-child { text-align:left; }
-  .group-tbl td { padding:8px 10px; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.04); text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.78rem; }
-  .group-tbl td:first-child { text-align:left; font-family:'Inter',sans-serif; font-size:0.84rem; }
+  .group-card-hdr { background:rgba(201,168,76,0.08); border-bottom:1px solid var(--border); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .group-card-title { font-family:'Cinzel',serif; font-size:0.9rem; color:var(--gold); font-weight:700; letter-spacing:0.06em; white-space:nowrap; }
+  .group-tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .group-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
+  .group-tbl col.col-team { width:46%; }
+  .group-tbl col.col-stat { width:6.75%; }
+  .group-tbl th { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--silver); padding:6px 4px; font-weight:500; text-align:right; white-space:nowrap; }
+  .group-tbl th:first-child { text-align:left; padding-left:10px; }
+  .group-tbl td { padding:8px 4px; font-size:0.78rem; border-top:1px solid rgba(255,255,255,0.04); text-align:right; font-family:'JetBrains Mono',monospace; white-space:nowrap; overflow:hidden; }
+  .group-tbl td:first-child { text-align:left; font-family:'Inter',sans-serif; font-size:0.82rem; padding-left:10px; padding-right:6px; overflow:visible; }
   .group-tbl tr:hover td { background:rgba(201,168,76,0.04); }
-  .group-team-cell { display:flex; align-items:center; gap:6px; }
-  .group-pos { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--silver); min-width:14px; }
+  .group-team-cell { display:flex; align-items:center; gap:5px; min-width:0; }
+  .group-team-cell .gt-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .group-pos { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--silver); min-width:13px; flex-shrink:0; }
   .group-pos.adv { color:var(--green); }
   .group-pos.maybe { color:var(--gold); }
   .pts-cell-grp { color:var(--gold2); font-weight:700; }
-  .owner-tag { font-size:0.6rem; color:var(--gold); background:rgba(201,168,76,0.1); border-radius:3px; padding:1px 4px; margin-left:2px; }
+  .owner-tag { font-size:0.56rem; color:var(--gold); background:rgba(201,168,76,0.1); border-radius:3px; padding:1px 3px; margin-left:1px; flex-shrink:0; }
+  .group-legend { font-size:0.62rem; color:var(--silver); white-space:nowrap; }
 
   @media(max-width:640px){
     .tbl th:nth-child(5),.tbl td:nth-child(5){ display:none; }
     .flag-chips { display:none; }
     .match-card { grid-template-columns:1fr auto 1fr; }
     .match-scorers { display:none; }
+    .groups-grid { grid-template-columns:1fr; }
+    .owner-tag { display:none; }
   }
 </style>
 </head>
@@ -257,13 +283,12 @@
 
   <!-- MATCH HISTORY -->
   <div id="tab-matches" class="tab-panel">
-    <div class="section-hdr"><h2>Match History</h2><span>Most recent first · Gold border = league team involved</span></div>
+    <div class="section-hdr"><h2>Match History</h2><span>Played &amp; live matches · Most recent first · Gold border = league team involved</span></div>
     <div class="match-filters">
       <button class="mf-btn active" onclick="filterMatches('all',this)">All Matches</button>
-      <button class="mf-btn" onclick="filterMatches('league',this)">League Teams Only</button>
-      <button class="mf-btn" onclick="filterMatches('live',this)">Live</button>
-      <button class="mf-btn" onclick="filterMatches('group',this)">Group Stage</button>
-      <button class="mf-btn" onclick="filterMatches('knockout',this)">Knockout</button>
+      <select id="owner-filter" class="mf-select" onchange="filterMatchesByOwner(this.value)">
+        <option value="">Filter by Owner…</option>
+      </select>
     </div>
     <div id="matches-body"><div class="loading-wrap"><div class="spinner"></div><br>Loading…</div></div>
   </div>
@@ -618,7 +643,7 @@ function renderGroups(games) {
           <div class="group-team-cell">
             <span class="group-pos ${posClass}">${posSymbol||i+1}</span>
             <span>${flag(t.name)}</span>
-            <span>${t.name}</span>${ownerTag}
+            <span class="gt-name">${t.name}</span>${ownerTag}
           </div>
         </td>
         <td>${t.mp}</td>
@@ -635,12 +660,19 @@ function renderGroups(games) {
     return `<div class="group-card">
       <div class="group-card-hdr">
         <span class="group-card-title">Group ${grpLetter}</span>
-        <span style="font-size:0.65rem;color:var(--silver)">▲ Advances · ◆ Maybe</span>
+        <span class="group-legend">▲ Advances · ◆ Maybe</span>
       </div>
-      <table class="group-tbl">
-        <thead><tr><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="group-tbl-wrap">
+        <table class="group-tbl">
+          <colgroup>
+            <col class="col-team">
+            <col class="col-stat"><col class="col-stat"><col class="col-stat"><col class="col-stat">
+            <col class="col-stat"><col class="col-stat"><col class="col-stat">
+          </colgroup>
+          <thead><tr><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>`;
   }).join('');
 
@@ -648,8 +680,6 @@ function renderGroups(games) {
 }
 
 // ── RENDER MATCH HISTORY ───────────────────────────────────────────────────
-let _allMatchCards = []; // stored for filter re-render
-
 function formatDate(str) {
   if (!str) return '';
   // "06/13/2026 21:00" → "Jun 13 · 21:00"
@@ -678,79 +708,180 @@ function roundLabel(type, group, matchday) {
 }
 
 function renderMatches(games) {
-  // Sort: live first, then finished by date desc, then upcoming by date asc
-  const live     = games.filter(g=>(g.time_elapsed||'').toLowerCase()==='live');
-  const finished = games.filter(g=>(g.finished||'').toString().toUpperCase()==='TRUE').reverse();
-  const upcoming = games.filter(g=>(g.finished||'').toString().toUpperCase()!=='TRUE'&&(g.time_elapsed||'').toLowerCase()!=='live');
-  const sorted   = [...live, ...finished, ...upcoming];
-
-  _allMatchCards = sorted.map(g => {
-    const hN=normName(g.home_team_name_en||g.home_team_label||'TBD');
-    const aN=normName(g.away_team_name_en||g.away_team_label||'TBD');
-    const isLive=(g.time_elapsed||'').toLowerCase()==='live';
-    const isDone=(g.finished||'').toString().toUpperCase()==='TRUE';
-    const type=(g.type||'').toLowerCase();
-    const isKnockout=type!=='group';
-    const hLeague=LEAGUE_TEAMS.has(hN), aLeague=LEAGUE_TEAMS.has(aN);
-    const isLeagueGame=hLeague||aLeague;
-
-    const hOwner=TEAM_OWNER[hN]?`<div class="match-team-owner">${TEAM_OWNER[hN]}</div>`:'';
-    const aOwner=TEAM_OWNER[aN]?`<div class="match-team-owner">${TEAM_OWNER[aN]}</div>`:'';
-
-    const hScore=isDone||isLive?parseInt(g.home_score||0):'-';
-    const aScore=isDone||isLive?parseInt(g.away_score||0):'-';
-    const scoreClass=isLive?'match-score live':'match-score';
-
-    const hScorers=parseScorers(g.home_scorers);
-    const aScorers=parseScorers(g.away_scorers);
-    const scorerRow=(hScorers.length||aScorers.length)&&isDone?`
-      <div class="match-scorers">
-        <div>${hScorers.join(', ')}</div>
-        <div class="away-scorers">${aScorers.join(', ')}</div>
-      </div>`:'';
-
-    const liveBadge=isLive?`<div class="match-live-badge"><span class="live-dot"></span>LIVE</div>`:'';
-    const statusText=!isDone&&!isLive?formatDate(g.local_date):'';
-
-    // data attributes for filtering
-    const filterAttrs=`data-type="${type}" data-league="${isLeagueGame?'1':'0'}" data-live="${isLive?'1':'0'}" data-knockout="${isKnockout?'1':'0'}"`;
-
-    return `<div class="match-card ${isLive?'is-live':''} ${isLeagueGame?'league-game':''}" ${filterAttrs}>
-      <div class="match-team">
-        <div class="match-team-flag">${flag(hN)}</div>
-        <div><div class="match-team-name">${hN}</div>${hOwner}</div>
-      </div>
-      <div class="match-center">
-        <div class="${scoreClass}">${hScore} – ${aScore}</div>
-        <div class="match-meta">${roundLabel(g.type,g.group,g.matchday)}</div>
-        ${isDone&&!isLive?`<div class="match-meta">${formatDate(g.local_date)}</div>`:''}
-        ${statusText?`<div class="match-meta">${statusText}</div>`:''}
-        ${liveBadge}
-      </div>
-      <div class="match-team away">
-        <div class="match-team-flag">${flag(aN)}</div>
-        <div><div class="match-team-name">${aN}</div>${aOwner}</div>
-      </div>
-      ${scorerRow}
-    </div>`;
+  // Only show matches that are live or already finished — no upcoming/future matches
+  const playedOrLive = games.filter(g => {
+    const isLive = (g.time_elapsed||'').toLowerCase()==='live';
+    const isDone = (g.finished||'').toString().toUpperCase()==='TRUE';
+    return isLive || isDone;
   });
 
-  document.getElementById('matches-body').innerHTML=`<div class="match-list">${_allMatchCards.join('')}</div>`;
+  // Sort most recent (or live) first. We use local_date as the sort key.
+  // Live matches are "today" so they sort to the top of today's date group naturally
+  // when we parse local_date into a real Date object for comparison.
+  const withParsedDate = playedOrLive.map(g => {
+    const isLive = (g.time_elapsed||'').toLowerCase()==='live';
+    const dateObj = parseLocalDate(g.local_date);
+    return { g, isLive, dateObj };
+  });
+
+  withParsedDate.sort((a,b) => {
+    // Live matches always sort to the very top
+    if (a.isLive && !b.isLive) return -1;
+    if (!a.isLive && b.isLive) return 1;
+    // Otherwise sort by date descending (most recent first)
+    return (b.dateObj?.getTime()||0) - (a.dateObj?.getTime()||0);
+  });
+
+  // Group into date sections (using the date portion only, ignoring time)
+  const dateGroups = []; // [{ dateKey, dateLabel, matches: [...] }]
+  const groupIndex = {};
+
+  for (const item of withParsedDate) {
+    const dateKey = item.dateObj ? item.dateObj.toDateString() : 'unknown';
+    if (!(dateKey in groupIndex)) {
+      groupIndex[dateKey] = dateGroups.length;
+      dateGroups.push({ dateKey, dateLabel: formatDateHeader(item.dateObj), matches: [] });
+    }
+    dateGroups[groupIndex[dateKey]].matches.push(item.g);
+  }
+
+  const sectionsHtml = dateGroups.map(section => {
+    const cardsHtml = section.matches.map(g => buildMatchCardHtml(g)).join('');
+    return `<div class="date-section" data-date-section>
+      <div class="date-hdr">
+        <h3>${section.dateLabel}</h3>
+        <span class="date-count">${section.matches.length} match${section.matches.length!==1?'es':''}</span>
+      </div>
+      <div class="match-list">${cardsHtml}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('matches-body').innerHTML = sectionsHtml || `<div class="loading-wrap">No matches played yet.</div>`;
+
+  // Populate the owner filter dropdown (once)
+  populateOwnerFilter();
+}
+
+function parseLocalDate(str) {
+  if (!str) return null;
+  // "06/13/2026 21:00" → Date object
+  const [datePart, timePart] = str.split(' ');
+  if (!datePart) return null;
+  const [m,d,y] = datePart.split('/').map(Number);
+  let hh=0, mm=0;
+  if (timePart) { const [h,mi]=timePart.split(':').map(Number); hh=h||0; mm=mi||0; }
+  return new Date(y, m-1, d, hh, mm);
+}
+
+function formatDateHeader(dateObj) {
+  if (!dateObj) return 'Date Unknown';
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const day = dateObj.getDate();
+  const suffix = (day%10===1&&day!==11)?'st':(day%10===2&&day!==12)?'nd':(day%10===3&&day!==13)?'rd':'th';
+  return `${months[dateObj.getMonth()]} ${day}${suffix}`;
+}
+
+function buildMatchCardHtml(g) {
+  const hN=normName(g.home_team_name_en||g.home_team_label||'TBD');
+  const aN=normName(g.away_team_name_en||g.away_team_label||'TBD');
+  const isLive=(g.time_elapsed||'').toLowerCase()==='live';
+  const isDone=(g.finished||'').toString().toUpperCase()==='TRUE';
+  const type=(g.type||'').toLowerCase();
+  const hLeague=LEAGUE_TEAMS.has(hN), aLeague=LEAGUE_TEAMS.has(aN);
+  const isLeagueGame=hLeague||aLeague;
+  const owners=[TEAM_OWNER[hN],TEAM_OWNER[aN]].filter(Boolean);
+
+  const hOwner=TEAM_OWNER[hN]?`<div class="match-team-owner">${TEAM_OWNER[hN]}</div>`:'';
+  const aOwner=TEAM_OWNER[aN]?`<div class="match-team-owner">${TEAM_OWNER[aN]}</div>`:'';
+
+  const hScore=parseInt(g.home_score||0);
+  const aScore=parseInt(g.away_score||0);
+  const scoreClass=isLive?'match-score live':'match-score';
+
+  const hScorers=parseScorers(g.home_scorers);
+  const aScorers=parseScorers(g.away_scorers);
+  const scorerRow=(hScorers.length||aScorers.length)?`
+    <div class="match-scorers">
+      <div>${hScorers.join(', ')}</div>
+      <div class="away-scorers">${aScorers.join(', ')}</div>
+    </div>`:'';
+
+  const liveBadge=isLive?`<div class="match-live-badge"><span class="live-dot"></span>LIVE</div>`:'';
+
+  // data attributes for filtering — owners stored as pipe-delimited list
+  const ownerAttr = owners.join('|');
+  const filterAttrs=`data-type="${type}" data-league="${isLeagueGame?'1':'0'}" data-owners="${ownerAttr}"`;
+
+  return `<div class="match-card ${isLive?'is-live':''} ${isLeagueGame?'league-game':''}" ${filterAttrs}>
+    <div class="match-team">
+      <div class="match-team-flag">${flag(hN)}</div>
+      <div><div class="match-team-name">${hN}</div>${hOwner}</div>
+    </div>
+    <div class="match-center">
+      <div class="${scoreClass}">${hScore} – ${aScore}</div>
+      <div class="match-meta">${roundLabel(g.type,g.group,g.matchday)}</div>
+      <div class="match-meta">${formatDate(g.local_date)}</div>
+      ${liveBadge}
+    </div>
+    <div class="match-team away">
+      <div class="match-team-flag">${flag(aN)}</div>
+      <div><div class="match-team-name">${aN}</div>${aOwner}</div>
+    </div>
+    ${scorerRow}
+  </div>`;
+}
+
+function populateOwnerFilter() {
+  const select = document.getElementById('owner-filter');
+  if (!select || select.dataset.populated) return; // only populate once
+  const ownerNames = OWNERS.map(o=>o.name);
+  ownerNames.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+  select.dataset.populated = '1';
 }
 
 // ── FILTER MATCHES ─────────────────────────────────────────────────────────
 function filterMatches(filter, btn) {
   document.querySelectorAll('.mf-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  document.getElementById('owner-filter').value = '';
+  document.getElementById('owner-filter').classList.remove('has-value');
 
-  const cards = document.querySelectorAll('.match-card');
-  cards.forEach(card => {
-    let show = true;
-    if (filter==='league')   show = card.dataset.league==='1';
-    if (filter==='live')     show = card.dataset.live==='1';
-    if (filter==='group')    show = card.dataset.type==='group';
-    if (filter==='knockout') show = card.dataset.knockout==='1';
-    card.style.display = show?'':'none';
+  applyMatchFilter(card => true);
+}
+
+function filterMatchesByOwner(ownerName) {
+  const select = document.getElementById('owner-filter');
+  document.querySelectorAll('.mf-btn').forEach(b=>b.classList.remove('active'));
+
+  if (!ownerName) {
+    select.classList.remove('has-value');
+    document.querySelector('.mf-btn').classList.add('active'); // re-activate "All Matches"
+    applyMatchFilter(card => true);
+    return;
+  }
+
+  select.classList.add('has-value');
+  applyMatchFilter(card => (card.dataset.owners||'').split('|').includes(ownerName));
+}
+
+function applyMatchFilter(predicate) {
+  const sections = document.querySelectorAll('[data-date-section]');
+  sections.forEach(section => {
+    const cards = section.querySelectorAll('.match-card');
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const show = predicate(card);
+      card.style.display = show ? '' : 'none';
+      if (show) visibleCount++;
+    });
+    section.style.display = visibleCount > 0 ? '' : 'none';
+    const countEl = section.querySelector('.date-count');
+    if (countEl) countEl.textContent = `${visibleCount} match${visibleCount!==1?'es':''}`;
   });
 }
 
