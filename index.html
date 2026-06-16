@@ -552,7 +552,7 @@ function renderAll(summaries, teamStats) {
       </tr></thead>
       <tbody>${draftRows}</tbody>
     </table>
-    <p style="margin-top:14px;font-size:0.73rem;color:var(--silver);">Updates automatically every 15 minutes from live World Cup results. Tiebreaker: Goal Differential → Total Wins.</p>`;
+    <p style="margin-top:14px;font-size:0.73rem;color:var(--silver);">Updates automatically every 30 minutes from live World Cup results. Tiebreaker: Goal Differential → Total Wins.</p>`;
 }
 
 // ── TAB SWITCHING ──────────────────────────────────────────────────────────
@@ -586,7 +586,7 @@ async function init() {
     console.error(err);
     showError('Could not load data: ' + err.message);
   }
-  setTimeout(init, 15 * 60 * 1000); // refresh every 15 min
+  setTimeout(init, 30 * 60 * 1000); // refresh every 30 min
 }
 
 init();

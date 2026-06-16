@@ -22,7 +22,7 @@
 const API_BASE   = 'https://v3.football.api-sports.io';
 const LEAGUE     = 1;
 const SEASON     = 2026;
-const CACHE_TTL  = 60 * 15; // 15 minutes in seconds
+const CACHE_TTL  = 60 * 30; // 30 minutes in seconds
 
 // Allowed origins — add your GitHub Pages URL once you have it
 // e.g. 'https://yourusername.github.io'
