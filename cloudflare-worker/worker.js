@@ -61,7 +61,7 @@ export default {
 
     // Check Cloudflare edge cache
     const cache    = caches.default;
-    const cacheKey = new Request(`https://kotn-cache.internal${pathname}`, { method: 'GET' });
+    const cacheKey = new Request(`https://kotn-cache-v2.internal${pathname}`, { method: 'GET' });
     const cached   = await cache.match(cacheKey);
 
     if (cached) {
@@ -118,6 +118,7 @@ export default {
 
     const body   = await upstream.text();
     const status = 200;
+    const fetchedAt = Date.now();
 
     const respHeaders = new Headers({
       'Content-Type':                  'application/json',
@@ -126,14 +127,19 @@ export default {
       'Access-Control-Allow-Methods':  'GET, OPTIONS',
       'Access-Control-Allow-Headers':  'Content-Type',
       'X-Cache':                       'MISS',
+      'X-Fetched-At':                  String(fetchedAt),
     });
 
-    // Store with a 24hr TTL so stale-on-error has a long window to fall back to
+    // Store the cache entry with the SAME TTL we actually want (30 min).
+    // Cloudflare's Cache API treats Cache-Control max-age as the freshness
+    // window — storing 86400 here was the bug: it told Cloudflare to treat
+    // this response as fresh for 24 hours, so cache.match() kept returning
+    // it long after newer match data existed upstream.
     const toCache = new Response(body, {
       status,
       headers: new Headers({
         ...Object.fromEntries(respHeaders),
-        'Cache-Control': 'public, max-age=86400', // 24hr for stored copy
+        'Cache-Control': `public, max-age=${CACHE_TTL}`,
       }),
     });
     ctx.waitUntil(cache.put(cacheKey, toCache.clone()));
