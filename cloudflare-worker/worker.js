@@ -73,14 +73,38 @@ export default {
         cf: { cacheTtl: 0 },
       });
     } catch (err) {
+      // Network error — serve stale cache if available, otherwise error
+      const stale = await cache.match(cacheKey);
+      if (stale) {
+        const headers = new Headers(stale.headers);
+        headers.set('X-Cache', 'STALE');
+        headers.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+        return new Response(stale.body, { status: 200, headers });
+      }
       return corsResponse(
         JSON.stringify({ error: 'Upstream fetch failed', detail: err.message }),
         502
       );
     }
 
+    // If upstream returned an error, serve stale cache rather than propagating the error
+    if (!upstream.ok) {
+      const stale = await cache.match(cacheKey);
+      if (stale) {
+        const headers = new Headers(stale.headers);
+        headers.set('X-Cache', 'STALE');
+        headers.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+        return new Response(stale.body, { status: 200, headers });
+      }
+      // No stale cache available — return the upstream error as-is
+      return corsResponse(
+        JSON.stringify({ error: `Upstream error ${upstream.status}`, detail: upstreamPath }),
+        502
+      );
+    }
+
     const body   = await upstream.text();
-    const status = upstream.ok ? 200 : upstream.status;
+    const status = 200;
 
     const respHeaders = new Headers({
       'Content-Type':                  'application/json',
@@ -91,7 +115,14 @@ export default {
       'X-Cache':                       'MISS',
     });
 
-    const toCache = new Response(body, { status, headers: respHeaders });
+    // Store with a 24hr TTL so stale-on-error has a long window to fall back to
+    const toCache = new Response(body, {
+      status,
+      headers: new Headers({
+        ...Object.fromEntries(respHeaders),
+        'Cache-Control': 'public, max-age=86400', // 24hr for stored copy
+      }),
+    });
     ctx.waitUntil(cache.put(cacheKey, toCache.clone()));
 
     return new Response(body, { status, headers: respHeaders });
