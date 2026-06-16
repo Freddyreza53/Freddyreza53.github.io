@@ -296,14 +296,6 @@ function detectKnockoutStage(round) {
   return null;
 }
 
-function groupMdStage(round) {
-  // "Group Stage - 1", "Group Stage - 2", "Group Stage - 3"
-  const m = (round || '').match(/group stage\s*[-–]\s*(\d)/i);
-  if (m) return `group_md${m[1]}`;
-  if ((round || '').toLowerCase().includes('group')) return 'group_md1';
-  return null;
-}
-
 function stageClass(s) {
   if (s === 'group_md1') return 's-group';
   if (s === 'group_md2') return 's-group';
@@ -332,27 +324,34 @@ function calcPoints(w, d, gf, stage) {
 }
 
 // ── API CALLS ──────────────────────────────────────────────────────────────
-// All requests go through the Cloudflare Worker, which holds the API key
-// and caches responses for 15 minutes. No API key is exposed in this file.
-async function apiFetch(route) {
-  // route is '/fixtures' or '/standings'
+// All requests go through the Cloudflare Worker which caches them for 30 min.
+// worldcup26.ir is free with no API key required — nothing is secret here.
+async function workerFetch(route) {
   const res = await fetch(`${WORKER_URL}${route}`);
-  if (!res.ok) throw new Error(`Worker error ${res.status}`);
-  const json = await res.json();
-  if (json.errors && Object.keys(json.errors).length) {
-    const msg = Object.values(json.errors).join(', ');
-    throw new Error(msg);
-  }
-  return json.response;
+  if (!res.ok) throw new Error(`Worker responded with ${res.status} for ${route}`);
+  return res.json(); // worldcup26.ir returns a plain array, not wrapped in .response
 }
 
 // ── MAIN DATA FETCH ────────────────────────────────────────────────────────
-// Primary source: /fixtures — gives us every match with round name, scores, and winner flags.
-// We build W/D/L/GF/GA and furthest stage entirely from finished fixtures.
-// Secondary source: /standings — used only as a fallback to seed teams that haven't played yet.
+// worldcup26.ir response shapes:
+//
+// GET /games  → array of match objects:
+//   { id, home_team_id, away_team_id, home_score, away_score,
+//     matchday, type ("group"|"knockout"), finished,
+//     home_team: { name_en, ... }, away_team: { name_en, ... } }
+//
+// GET /groups → array of group objects:
+//   { group, teams: [{ team_id, pts, gf, ga, gd, wins, draws, losses,
+//                      played, team: { name_en } }] }
+//
+// Strategy: build W/D/L/GF/GA from /games (finished matches),
+// then layer in group standings from /groups for accuracy,
+// then determine furthest stage from match types and matchday.
 async function loadData() {
-  // Fetch all fixtures for the tournament
-  const fixtures = await apiFetch(`/fixtures`);
+  const [games, groups] = await Promise.all([
+    workerFetch('/games'),
+    workerFetch('/groups'),
+  ]);
 
   const teamStats = {}; // normalized name → { w, d, l, gf, ga, stage }
 
@@ -367,90 +366,82 @@ async function loadData() {
     }
   };
 
-  // Finished statuses
-  const DONE = new Set(['FT','AET','PEN']);
-
-  for (const fx of fixtures) {
-    const round    = fx.league.round || '';
-    const status   = fx.fixture.status.short;
-    const homeRaw  = fx.teams.home.name;
-    const awayRaw  = fx.teams.away.name;
-    const homeName = normName(homeRaw);
-    const awayName = normName(awayRaw);
-    const hg       = fx.goals.home ?? 0;
-    const ag       = fx.goals.away ?? 0;
-    const homeWon  = fx.teams.home.winner === true;
-    const awayWon  = fx.teams.away.winner === true;
-
-    // Seed all teams we see, even from unplayed fixtures
-    ensureTeam(homeName);
-    ensureTeam(awayName);
-
-    // Determine the stage this match belongs to
-    const groupMd   = groupMdStage(round);
-    const knockStage = detectKnockoutStage(round);
-
-    // Mark both teams as having reached this round (even if match not played yet)
-    if (groupMd) {
-      upgradeStage(homeName, groupMd);
-      upgradeStage(awayName, groupMd);
-    } else if (knockStage) {
-      upgradeStage(homeName, knockStage);
-      upgradeStage(awayName, knockStage);
-    }
-
-    // Only accumulate stats from finished matches
-    if (!DONE.has(status)) continue;
-
-    if (groupMd) {
-      // Group stage: wins, draws, losses, goals
-      teamStats[homeName].gf += hg; teamStats[homeName].ga += ag;
-      teamStats[awayName].gf += ag; teamStats[awayName].ga += hg;
-      if (homeWon)      { teamStats[homeName].w++; teamStats[awayName].l++; }
-      else if (awayWon) { teamStats[awayName].w++; teamStats[homeName].l++; }
-      else              { teamStats[homeName].d++; teamStats[awayName].d++; }
-    } else if (knockStage) {
-      // Knockout: only wins (no draws in KO except penalties resolved to a winner)
-      teamStats[homeName].gf += hg; teamStats[homeName].ga += ag;
-      teamStats[awayName].gf += ag; teamStats[awayName].ga += hg;
-      if (homeWon)      { teamStats[homeName].w++; teamStats[awayName].l++; }
-      else if (awayWon) { teamStats[awayName].w++; teamStats[homeName].l++; }
-
-      // Loser is eliminated — but only if they haven't advanced further already
-      // (3rd place match loser is still 'sf' stage, not knocked back)
-      if (!round.toLowerCase().includes('3rd')) {
-        if (homeWon && stageRank(teamStats[awayName].stage) <= stageRank(knockStage)) {
-          teamStats[awayName].stage = 'out';
-        } else if (awayWon && stageRank(teamStats[homeName].stage) <= stageRank(knockStage)) {
-          teamStats[homeName].stage = 'out';
-        }
-      }
-
-      // Final winner = champion
-      if (round.toLowerCase().includes('final') && !round.toLowerCase().includes('semi') && !round.toLowerCase().includes('3rd')) {
-        if (homeWon) teamStats[homeName].stage = 'champion';
-        if (awayWon) teamStats[awayName].stage = 'champion';
-      }
+  // ── Pass 1: seed all teams from groups endpoint (most reliable W/D/L/GF/GA)
+  for (const grp of (groups || [])) {
+    for (const entry of (grp.teams || [])) {
+      const name = normName(entry.team?.name_en || '');
+      if (!name) continue;
+      ensureTeam(name);
+      // Group standings endpoint gives cumulative group-stage stats
+      teamStats[name].w  = parseInt(entry.wins   || 0) || 0;
+      teamStats[name].d  = parseInt(entry.draws  || 0) || 0;
+      teamStats[name].l  = parseInt(entry.losses || 0) || 0;
+      teamStats[name].gf = parseInt(entry.gf     || 0) || 0;
+      teamStats[name].ga = parseInt(entry.ga     || 0) || 0;
+      // Determine group stage progress from matches played
+      const played = parseInt(entry.played || 0) || 0;
+      const mdStage = played >= 3 ? 'group_md3' : played >= 2 ? 'group_md2' : 'group_md1';
+      upgradeStage(name, mdStage);
     }
   }
 
-  // Fallback: seed any of our 42 league teams not yet seen in fixtures
-  // (shouldn't happen but safe guard using standings)
-  try {
-    const standingsResp = await apiFetch(`/standings`);
-    if (standingsResp && standingsResp.length > 0) {
-      const groups = standingsResp[0].league.standings;
-      for (const group of groups) {
-        for (const entry of group) {
-          const name = normName(entry.team.name);
-          if (!teamStats[name]) {
-            teamStats[name] = { w: entry.all.win, d: entry.all.draw, l: entry.all.lose, gf: entry.all.goals.for, ga: entry.all.goals.against, stage: 'group_md1' };
-          }
+  // ── Pass 2: scan all games to detect knockout advancement and accumulate KO stats
+  for (const game of (games || [])) {
+    const homeName = normName(game.home_team?.name_en || '');
+    const awayName = normName(game.away_team?.name_en || '');
+    if (!homeName || !awayName) continue;
+
+    ensureTeam(homeName);
+    ensureTeam(awayName);
+
+    const type     = (game.type || '').toLowerCase();       // "group" or "knockout"
+    const finished = game.finished === true || game.finished === 'true';
+    const matchday = parseInt(game.matchday || 1);
+    const hg       = parseInt(game.home_score ?? 0) || 0;
+    const ag       = parseInt(game.away_score ?? 0) || 0;
+    const round    = (game.round || game.stage || '').toLowerCase();
+
+    if (type === 'group') {
+      // Track furthest matchday reached (even for upcoming matches)
+      const mdStage = matchday >= 3 ? 'group_md3' : matchday >= 2 ? 'group_md2' : 'group_md1';
+      upgradeStage(homeName, mdStage);
+      upgradeStage(awayName, mdStage);
+      // Stats already populated from /groups — skip accumulating here
+    } else if (type === 'knockout' || type === 'playoff') {
+      // Determine which knockout round this is
+      const kStage = detectKnockoutStage(round || game.round_name || '');
+      if (kStage) {
+        // Both teams reached this round
+        upgradeStage(homeName, kStage);
+        upgradeStage(awayName, kStage);
+      }
+
+      if (finished) {
+        // Accumulate knockout goals on top of group stage totals
+        teamStats[homeName].gf += hg; teamStats[homeName].ga += ag;
+        teamStats[awayName].gf += ag; teamStats[awayName].ga += hg;
+
+        const homeWon = hg > ag;
+        const awayWon = ag > hg;
+
+        if (homeWon)      { teamStats[homeName].w++; teamStats[awayName].l++; }
+        else if (awayWon) { teamStats[awayName].w++; teamStats[homeName].l++; }
+
+        // Loser is eliminated (skip 3rd place match)
+        const is3rd = round.includes('3rd') || round.includes('third') || round.includes('place');
+        if (!is3rd && kStage) {
+          if (homeWon) teamStats[awayName].stage = 'out';
+          else if (awayWon) teamStats[homeName].stage = 'out';
+        }
+
+        // Final winner = champion
+        const isFinal = round.includes('final') && !round.includes('semi') && !round.includes('quarter') && !is3rd;
+        if (isFinal) {
+          if (homeWon) teamStats[homeName].stage = 'champion';
+          if (awayWon) teamStats[awayName].stage = 'champion';
         }
       }
     }
-  } catch(e) {
-    console.warn('Standings fallback failed:', e.message);
   }
 
   return teamStats;

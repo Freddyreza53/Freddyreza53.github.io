@@ -1,9 +1,14 @@
 # Kings of the North — Cloudflare Worker Setup
 
-This Worker acts as a secure caching proxy between your dashboard and api-football.com.
-Your API key lives here as an encrypted secret — it is never exposed in the HTML.
-All 14 league members share one cached response, so only 2 real API requests
-go out every 15 minutes regardless of how many people have the dashboard open.
+This Worker is a **caching proxy** between your dashboard and worldcup26.ir,
+a free open-source FIFA World Cup 2026 API with no authentication required.
+
+**No API keys. No secrets. Nothing to configure except deploying.**
+
+The Worker's only jobs are:
+1. Cache API responses at the Cloudflare edge for 30 minutes
+2. Add CORS headers so the GitHub Pages dashboard can call it
+3. Be the single fetch point so all 14 league members share one cache
 
 ---
 
@@ -11,7 +16,6 @@ go out every 15 minutes regardless of how many people have the dashboard open.
 
 - A free Cloudflare account → https://dash.cloudflare.com/sign-up
 - Node.js installed (to run Wrangler, Cloudflare's CLI)
-- Your api-football.com API key
 
 ---
 
@@ -41,29 +45,17 @@ From inside this `cloudflare-worker/` folder:
 wrangler deploy
 ```
 
-Wrangler reads `wrangler.toml` and deploys `worker.js`.
 After a few seconds you'll see a URL like:
 
 ```
 https://kotn-proxy.YOUR-SUBDOMAIN.workers.dev
 ```
 
-Copy that URL — you'll need it in Step 5.
+That's it. No secrets to add. The Worker is live.
 
 ---
 
-## Step 4 — Add your API key as a secret
-
-```bash
-wrangler secret put API_FOOTBALL_KEY
-```
-
-Wrangler will prompt you to paste your api-football.com key.
-It's stored encrypted in Cloudflare — never visible in your code or logs.
-
----
-
-## Step 5 — Update index.html
+## Step 4 — Update index.html
 
 Open `index.html` and find this line near the top of the `<script>` block:
 
@@ -71,18 +63,17 @@ Open `index.html` and find this line near the top of the `<script>` block:
 const WORKER_URL = 'REPLACE_WITH_YOUR_WORKER_URL';
 ```
 
-Replace the placeholder with your Worker URL from Step 3:
+Replace it with your Worker URL from Step 3:
 
 ```js
 const WORKER_URL = 'https://kotn-proxy.YOUR-SUBDOMAIN.workers.dev';
 ```
 
-Save and push to GitHub. The dashboard will now route all API calls
-through the Worker instead of hitting api-football directly.
+Save and push to GitHub. Done.
 
 ---
 
-## Step 6 (Optional but recommended) — Lock down CORS
+## Step 5 (Optional but recommended) — Lock down CORS
 
 Once your GitHub Pages site is live, open `worker.js` and change:
 
@@ -108,34 +99,32 @@ This ensures only your dashboard can use the Worker.
 
 ## Testing the Worker
 
-You can test it directly in your browser or with curl:
-
 ```bash
 # Health check
 curl https://kotn-proxy.kingsofthenorth.workers.dev/health
 
-# Fixtures (should return World Cup match data)
-curl https://kotn-proxy.kingsofthenorth.workers.dev/fixtures
+# All 104 matches + scores
+curl https://kotn-proxy.kingsofthenorth.workers.dev/games
 
-# Standings
-curl https://kotn-proxy.kingsofthenorth.workers.dev/standings
+# Group standings
+curl https://kotn-proxy.kingsofthenorth.workers.dev/groups
 ```
 
 Check the `X-Cache` response header:
-- `X-Cache: MISS`  → fresh fetch from api-football (counts against quota)
-- `X-Cache: HIT`   → served from Cloudflare edge cache (free, instant)
+- `X-Cache: MISS`  → fresh fetch from worldcup26.ir (first request in 30-min window)
+- `X-Cache: HIT`   → served from Cloudflare edge cache (everyone else hits this)
 
 ---
 
 ## How caching works
 
-1. First person opens the dashboard → Worker fetches from api-football, caches result for 15 min
-2. Everyone else who opens it in that 15-min window → served instantly from Cloudflare cache
-3. After 15 minutes → next visitor triggers a fresh fetch, cycle repeats
-4. Total api-football requests: max 2 per 15-min window (fixtures + standings), = ~192/day max
+1. First person opens the dashboard → Worker fetches from worldcup26.ir, caches for 30 min
+2. All 13 other league members → served instantly from Cloudflare cache, zero upstream calls
+3. After 30 minutes → next visitor triggers a fresh fetch, cycle repeats
+4. Total upstream requests: 2 per 30-min window (games + groups) = ~96/day max
 
-Free tier limit: 100 requests/day on api-football → upgrade to their $10/mo starter plan,
-which gives 7,500 requests/day. With the Worker caching, 192/day is all you'll ever use.
+worldcup26.ir is free with no rate limits, so there's no quota to worry about.
+The caching is just good practice to keep the dashboard fast and the upstream happy.
 
 ---
 
@@ -144,10 +133,10 @@ which gives 7,500 requests/day. With the Worker caching, 192/day is all you'll e
 ```
 cloudflare-worker/
   worker.js       ← The Worker code (deploy this)
-  wrangler.toml   ← Wrangler config (name, compatibility date)
+  wrangler.toml   ← Wrangler config
   README.md       ← This file
 
-index.html        ← Your dashboard (points to the Worker URL)
+index.html        ← Dashboard (point WORKER_URL to your deployed Worker)
 .github/
   workflows/
     deploy.yml    ← Auto-deploys index.html to GitHub Pages on push
