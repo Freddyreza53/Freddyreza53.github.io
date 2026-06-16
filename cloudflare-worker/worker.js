@@ -1,20 +1,26 @@
 /**
  * Kings of the North — Cloudflare Worker
  *
- * Caching proxy for worldcup26.ir — a free, open-source, no-auth-required
- * FIFA World Cup 2026 API (https://github.com/rezarahiminia/worldcup2026).
+ * Caching proxy for worldcup26.ir — a free FIFA World Cup 2026 API
+ * (https://github.com/rezarahiminia/worldcup2026).
  *
- * No API key or secrets needed. The Worker's only job is to:
- *   1. Cache responses at the Cloudflare edge for 30 minutes
- *   2. Add CORS headers so the dashboard (GitHub Pages) can call it
- *   3. Act as a single fetch point so all 14 league members share one cache
+ * worldcup26.ir requires a Bearer token on requests. The token is stored
+ * as a Worker secret (WORLDCUP26_TOKEN) — never exposed to the dashboard
+ * or committed to the repo.
+ *
+ * The Worker's job is to:
+ *   1. Attach the Authorization header server-side
+ *   2. Cache responses at the Cloudflare edge for 30 minutes
+ *   3. Add CORS headers so the dashboard (GitHub Pages) can call it
+ *   4. Act as a single fetch point so all 14 league members share one cache
  *
  * Supported routes:
  *   GET /games    → worldcup26.ir/get/games    (all 104 matches + scores)
  *   GET /health   → returns {"ok":true}
  *
- * Deploy:  wrangler deploy
- * No secrets needed — nothing to configure beyond deploying.
+ * Deploy:
+ *   wrangler deploy
+ *   wrangler secret put WORLDCUP26_TOKEN
  */
 
 const UPSTREAM   = 'https://worldcup26.ir';
@@ -66,10 +72,17 @@ export default {
     }
 
     // Cache miss — fetch from worldcup26.ir
+    if (!env.WORLDCUP26_TOKEN) {
+      return corsResponse(JSON.stringify({ error: 'WORLDCUP26_TOKEN secret not configured in Worker environment.' }), 500);
+    }
+
     let upstream;
     try {
       upstream = await fetch(`${UPSTREAM}${upstreamPath}`, {
-        headers: { 'Accept': 'application/json' },
+        headers: {
+          'Accept':        'application/json',
+          'Authorization': `Bearer ${env.WORLDCUP26_TOKEN}`,
+        },
         cf: { cacheTtl: 0 },
       });
     } catch (err) {
