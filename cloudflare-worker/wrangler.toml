@@ -3,7 +3,7 @@ main = "worker.js"
 compatibility_date = "2025-03-03"
 
 [observability]
-enabled = false
+enabled = true
 head_sampling_rate = 1
 
 [observability.logs]
