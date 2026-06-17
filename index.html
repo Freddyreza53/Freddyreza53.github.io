@@ -315,7 +315,7 @@
     </div>
     <div class="rules-note">
       <strong>Draft Order:</strong> Highest total points earns pick #1, descending through all 14 owners.<br>
-      <strong>Tiebreaker 1:</strong> Goal Differential (GF - GA, summed across all your teams).<br>
+      <strong>Tiebreaker 1:</strong> Goal Differential (GF − GA, summed across all your teams).<br>
       <strong>Tiebreaker 2:</strong> Total Wins.<br>
       <strong>Note:</strong> 42 of 48 teams in play. Dropped (lowest FIFA rank): Curaçao, Haiti, New Zealand, Jordan, Cape Verde, Saudi Arabia.
     </div>
@@ -555,7 +555,7 @@ function renderRankings(summaries, teamStats) {
       <td><span class="rank-badge ${rc}">${i+1}</span></td>
       <td><div class="owner-name">${s.name}</div><div class="flag-chips">${chips}</div></td>
       <td class="r pts-big">${s.pts}</td>
-      <td class="r">${s.w}-${s.d}-${s.l}</td>
+      <td class="r">${s.w}–${s.d}–${s.l}</td>
       <td class="r ${gd>=0?'gd-pos':'gd-neg'}">${gd>0?'+':''}${gd}</td>
       <td><span class="proj-pick">#${i+1}</span></td>
     </tr>`;
@@ -903,7 +903,7 @@ function renderDraft(summaries) {
       <thead><tr><th>Pick</th><th>Owner</th><th>Teams</th><th class="r">Pts</th><th class="r">GD (TB)</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="margin-top:14px;font-size:0.73rem;color:var(--silver);">Updates automatically every 30 minutes. Tiebreaker: Goal Differential → Total Wins.</p>`;
+    <p style="margin-top:14px;font-size:0.73rem;color:var(--silver);">Updates automatically every minute. Tiebreaker: Goal Differential → Total Wins.</p>`;
 }
 
 // ── TAB SWITCHING ──────────────────────────────────────────────────────────
@@ -939,7 +939,7 @@ async function init() {
     console.error(err);
     showError('Could not load data: '+err.message);
   }
-  setTimeout(init, 30*60*1000);
+  setTimeout(init, 60*1000);
 }
 
 init();

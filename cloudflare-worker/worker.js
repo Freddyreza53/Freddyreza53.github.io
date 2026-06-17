@@ -10,7 +10,7 @@
  *
  * The Worker's job is to:
  *   1. Attach the Authorization header server-side
- *   2. Cache responses at the Cloudflare edge for 30 minutes
+ *   2. Cache responses at the Cloudflare edge for 1 minute
  *   3. Add CORS headers so the dashboard (GitHub Pages) can call it
  *   4. Act as a single fetch point so all 14 league members share one cache
  *
@@ -24,7 +24,7 @@
  */
 
 const UPSTREAM   = 'https://worldcup26.ir';
-const CACHE_TTL  = 60 * 30; // 30 minutes in seconds
+const CACHE_TTL  = 60; // 1 minute in seconds
 
 // Lock down to your GitHub Pages URL once deployed, e.g.:
 // 'https://yourusername.github.io'
@@ -61,7 +61,7 @@ export default {
 
     // Check Cloudflare edge cache
     const cache    = caches.default;
-    const cacheKey = new Request(`https://kotn-cache-v2.internal${pathname}`, { method: 'GET' });
+    const cacheKey = new Request(`https://kotn-cache.internal${pathname}`, { method: 'GET' });
     const cached   = await cache.match(cacheKey);
 
     if (cached) {
