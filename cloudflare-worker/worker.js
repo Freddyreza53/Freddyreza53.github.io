@@ -86,7 +86,7 @@ export default {
 
     // Check Cloudflare edge cache (primary, 1-minute freshness)
     const cache       = caches.default;
-    const cacheKey    = new Request(`https://kotn-cache.internal${pathname}`, { method: 'GET' });
+    const cacheKey    = new Request(`https://kotn-cache-v2.internal${pathname}`, { method: 'GET' });
     // Fallback cache key — same data, but stored with a long TTL purely as an
     // insurance copy for when upstream is having a bad moment. Only read on
     // failure, only written on success.
