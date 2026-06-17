@@ -61,7 +61,7 @@ export default {
 
     // Check Cloudflare edge cache
     const cache    = caches.default;
-    const cacheKey = new Request(`https://kotn-cache.internal${pathname}`, { method: 'GET' });
+    const cacheKey = new Request(`https://kotn-cache-v2.internal${pathname}`, { method: 'GET' });
     const cached   = await cache.match(cacheKey);
 
     if (cached) {
