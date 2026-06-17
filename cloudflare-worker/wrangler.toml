@@ -2,11 +2,22 @@ name = "kotn-proxy"
 main = "worker.js"
 compatibility_date = "2025-03-03"
 
+[observability]
+enabled = false
+head_sampling_rate = 1
+
 [observability.logs]
 enabled = true
+head_sampling_rate = 1
+persist = true
 invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1
 
 
 # No KV or Durable Objects needed — we use the built-in Cache API.
 # Your API key is stored as a secret (see deployment instructions).
-# It will appear as env.API_FOOTBALL_KEY inside the Worker.
+# It will appear as env.WORLDCUP26_TOKEN inside the Worker.
